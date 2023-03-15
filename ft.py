@@ -1,70 +1,141 @@
+import matplotlib.pyplot as plt
+from treelib import Node, Tree
+import webbrowser
+import sys, pathlib, os, csv
 
-from graphviz import Digraph
-import pandas as pd
 
-ancestry = pd.read_csv('FamilyTree.csv')
-# earl_ans = ancestry.loc[ancestry['Relation'] == 'God', 'Person 1'].iloc[0]
-earl_ans = ancestry.loc["Person 1"].iloc[0]
-ancestry['recorded_ind'] = 0    # Flag for indicating individuals whose data has been recorded in the tree
+line_year = [1]
+line_population = [0]
+line_avg_age = [0]
+line_deaths = [0]
+line_children_born = [0]
+line_food = [0]
 
-incomp = []
-comp = []
+def plot_graph(people, child, death, food):
+    global line_year, line_population, line_avg_age, line_max_workers, line_deaths, line_children_born, born_this_year, died_this_year
+    # line_deaths.append(death)
+    # line_children_born.append(child)
+    line_year.append(line_year[-1] + 1)
+    line_population.append(len(people))
+    line_food.append(food)
 
-dot = Digraph(comment = 'Ancestry', graph_attr = {'splines':'ortho'})
-node_nm = []
+    avg = []
+    for person in people:
+        avg.append(person.age)
+    try:
+        line_avg_age.append(sum(avg) / len(people))
+    except ZeroDivisionError:
+        line_avg_age.append(0)
 
-# Initializing first node
-det = str(ancestry.loc[ancestry['Person 1'] == earl_ans, 'Details'][0])
-g = ancestry.loc[ancestry['Person 1'] == earl_ans, 'Gender'][0]
-sh = 'rect' if g == 'M' else 'ellipse'
-dot.node(earl_ans, earl_ans, tooltip = det, shape = sh)
-node_nm.append(earl_ans)
 
-ancestry.loc[ancestry['Person 1'] == earl_ans, 'recorded_ind'] = 1
 
-# max_iter should be greater than number of generations
-max_iter = 5
+def show_graph():
+    plt.plot(line_year, line_population, label="Population", color=[0, 1, 0])
+    # plt.plot(line_year, line_deaths, label="Deaths", color=[1, 0, 0])
+    # plt.plot(line_year, line_children_born, label="Births", color=[0, 0, 0])
+    plt.plot(line_year, line_avg_age, label="Average Age", color=[1, 1, 0])
+    plt.plot(line_year, line_food, label="Food", color=[0, 0, 1])
+    plt.xlabel('Years')
+    plt.ylabel('Amount')
+    plt.title('Population Simulation')
+    plt.legend()
+    plt.show()
 
-for i in range(0, max_iter):
-    print(i)
-    temp = ancestry[ancestry['recorded_ind'] == 0]
+def familyTree(peopleDictionaryHistory):
+    tree = Tree()
+    tree.create_node("THE CREATOR", "God")  #root node
 
-    if len(temp) == 0:      # Break loop when all individuals have been recorded
-        break
-    else:
-        temp['this_gen_ind'] = temp.apply(lambda x: 1 if x['Person 2'] in incomp else 0, axis = 1)
+    for x in range(0, len(peopleDictionaryHistory)):
+        tree.create_node(peopleDictionaryHistory[x][0], peopleDictionaryHistory[x][1], peopleDictionaryHistory[x][2])
+    with open('output.txt', 'a', encoding='utf-8') as f:
+        sys.stdout = f
+        tree.show()
 
-        # Spouse Relationship
-        this_gen = temp[(temp['this_gen_ind'] == 1) & (temp['Relation'] == 'Spouse')]
-        if len(this_gen) > 0:
-            for j in range(0, len(this_gen)):
-                per1 = this_gen['Person 1'].iloc[j]
-                per2 = this_gen['Person 2'].iloc[j]
-                det = str(this_gen['Details'].iloc[j])
-                g = this_gen['Gender'].iloc[j]
-                sh = 'rect' if g == 'M' else 'ellipse'
-                with dot.subgraph() as subs:
-                    subs.attr(rank = 'same')
-                    subs.node(per1, per1, tooltip = det, shape = sh, fillcolor = "red")
-                    node_nm.append(per1)
-                    subs.edge(per2, per1, arrowhead = 'none', color = "black:invis:black")
+    url = pathlib.Path(f'{os.path.dirname(os.path.abspath(__file__))}\output.txt')
+    webbrowser.open_new_tab(url)
 
-        # Child Relationship
-        this_gen = temp[(temp['this_gen_ind'] == 1) & (temp['Relation'] == 'Child')]
-        if len(this_gen) > 0:
-            for j in range(0, len(this_gen)):
-                per1 = this_gen['Person 1'].iloc[j]
-                per2 = this_gen['Person 2'].iloc[j]
-                det = str(this_gen['Details'].iloc[j])
-                g = this_gen['Gender'].iloc[j]
-                sh = 'rect' if g == 'M' else 'ellipse'
-                dot.node(per1, per1, tooltip = det, shape = sh)
-                node_nm.append(per1)
-                dot.edge(per2, per1)
+def faimilyTree_Spreadsheet(peopleDictionary, id):
+    ft_list = []
+    csv_columns = ['Person 1', 'Relation', 'Person 2', 'Gender', 'Details']
+    ft = open(f'FamilyTree_{id}.csv', 'a', newline="")
+    for person in peopleDictionary:
+        if person.id == id:
+            person1 = {"Person 1": person.name}
+            relation = {"Relation": "Married" if person.married == True else "Partnered"}
+            try:
+                person2 = {"Person 2": person.partner.name}
+            except AttributeError:
+                person2 = {"Person 2": "No Partner"}
+            gender = {"Gender": 'M' if person.gender == 0 else 'F'}
+            details = {"Details": f'Children Below, age {person.age}' if len(person.children) > 0 else f'age {person.age}'}
+            comple = person1
+            comple.update(relation)
+            comple.update(person2)
+            comple.update(gender)
+            comple.update(details)
+            ft_list.append(comple)
+            if len(person.children) > 0:
+                for child in person.children:
+                    person1 = {"Person 1": child.name}
+                    relation = {"Relation": "Child"}
+                    person2 = {"Person 2": person.name}
+                    gender = {"Gender": 'M' if child.gender == 0 else 'F'}
+                    details = {"Details": f'{person.name} has {len(person.children)} children'}
+                    comple = person1
+                    comple.update(relation)
+                    comple.update(person2)
+                    comple.update(gender)
+                    comple.update(details)
+                    ft_list.append(comple)
 
-        comp.extend(incomp)
-        incomp = list(temp.loc[temp['this_gen_ind'] == 1, 'Person 1'])
-        ancestry['recorded_ind'] = temp.apply(lambda x: 1 if (x['Person 1'] in incomp) | (x['Person 1'] in comp) else 0, axis = 1)
 
-dot.format = 'svg'
-dot.render('sample_ancestry.gv.svg', view = True)
+
+
+    writer = csv.DictWriter(ft, fieldnames=csv_columns)
+    writer.writeheader()
+
+    for data in ft_list:
+        writer.writerow(data)
+
+    ft.close()
+
+def faimilyTreeAll_Spreadsheet(peopleDictionary):
+    ft_list = []
+    csv_columns = ['Person 1', 'Relation', 'Person 2', 'Gender', 'Details']
+    ft = open('FamilyTree.csv', 'a', newline="")
+    for person in peopleDictionary:
+        person1 = {"Person 1": person.name}
+        relation = {"Relation": "Married" if person.married == True else "Partnered"}
+        try:
+            person2 = {"Person 2": person.partner.name}
+        except AttributeError:
+            person2 = {"Person 2": "No Partner"}
+        gender = {"Gender": 'M' if person.gender == 0 else 'F'}
+        details = {"Details": f'Children Below, age {person.age}' if len(person.children) > 0 else f'age {person.age}'}
+        compile = person1
+        compile.update(relation)
+        compile.update(person2)
+        compile.update(gender)
+        compile.update(details)
+        ft_list.append(compile)
+        if len(person.children) > 0:
+            for child in person.children:
+                person1 = {"Person 1": child.name}
+                relation = {"Relation": "Child"}
+                person2 = {"Person 2": person.name}
+                gender = {"Gender": 'M' if child.gender == 0 else 'F'}
+                details = {"Details": f'{person.name} has {len(person.children)} children'}
+                compile = person1
+                compile.update(relation)
+                compile.update(person2)
+                compile.update(gender)
+                compile.update(details)
+                ft_list.append(compile)
+
+    writer = csv.DictWriter(ft, fieldnames=csv_columns)
+    writer.writeheader()
+
+    for data in ft_list:
+        writer.writerow(data)
+
+    ft.close()
