@@ -560,40 +560,41 @@ def beginSim():
 
 def main():
     global simulationLimit, startPopulation
-    beginSim()
+    # beginSim()
 
-    # o = str(input('Run simulation? Y or N: ')).lower()
-    # if o == 'y':
-    #     o = int(input('Start Populaion? (recommend 50): '))
-    #     if type(o) != int:
-    #         print('You have not entered a valid number')
-    #         time.sleep(2)
-    #         sys.exit()
-    #     elif type(o) == int:
-    #         if o > 1:
-    #             startPopulation = o
-    #         else:
-    #             print('You have not entered a valid number')
-    #             time.sleep(2)
-    #             sys.exit()
-    #
-    #
-    #     c = int(input('Target population cap (must be greater than start population): '))
-    #     if type(c) != int:
-    #         print('You have not entered a valid number')
-    #         time.sleep(2)
-    #         sys.exit()
-    #     elif type(c) == int:
-    #         if c > o:
-    #             simulationLimit = c
-    #             beginSim()
-    #         else:
-    #             print('You have not entered a valid number')
-    #             time.sleep(2)
-    #             sys.exit()
-    # else:
-    #     print('See you')
-    #     sys.exit()
+    o = str(input('Run simulation? Y or N: ')).lower()
+    if o == 'y':
+        o = int(input('Start Population? (>=2 or < <=50): '))
+        if type(o) != int:
+            print('You have not entered a valid number')
+            time.sleep(2)
+            sys.exit()
+        elif type(o) == int:
+            if o > 1 and o <= 50:
+                startPopulation = o
+                beginSim()
+            else:
+                print('You have not entered a valid number')
+                time.sleep(2)
+                sys.exit()
+
+
+        c = int(input('Target population cap (must be greater than start population): '))
+        if type(c) != int:
+            print('You have not entered a valid number')
+            time.sleep(2)
+            sys.exit()
+        elif type(c) == int:
+            if c > o:
+                simulationLimit = c
+                beginSim()
+            else:
+                print('You have not entered a valid number')
+                time.sleep(2)
+                sys.exit()
+    else:
+        print('See you')
+        sys.exit()
 
 
 
@@ -611,21 +612,26 @@ while len(peopleDictionary) < simulationLimit and len(peopleDictionary) > 1:
 else:
 
     o = str(input("\nWhat output would you like; '\033[32mG\033[0m'raph, '\033[32mF\033[0m'amily Tree, or '\033[32mB\033[0m'oth? ")).lower()
-    if o == 'g':
-        ft.show_graph()
-    elif o == 'f':
-        ft.familyTree(peopleDictionaryHistory)
-    elif o == 'b':
+    try:
+        if o == 'g':
+            ft.show_graph()
+        elif o == 'f':
+            ft.familyTree(peopleDictionaryHistory)
+        elif o == 'b':
 
-        ft.familyTree(peopleDictionaryHistory)
-        ft.show_graph()
+            ft.familyTree(peopleDictionaryHistory)
+            ft.show_graph()
 
-    elif o == 'e':
-        allPeople = peopleDictionaryAncestors + peopleDictionary
-        ft.faimilyTreeAll_Spreadsheet(allPeople)
-        for x in range(0, len(peopleDictionary)):
-            ft.faimilyTree_Spreadsheet(peopleDictionary, x)
-    else:
-        print('None selected')
+        elif o == 'e':
+            allPeople = peopleDictionaryAncestors + peopleDictionary
+            ft.faimilyTreeAll_Spreadsheet(allPeople)
+            for x in range(0, len(peopleDictionary)):
+                ft.faimilyTree_Spreadsheet(peopleDictionary, x)
+        else:
+            print('None selected')
+            time.sleep(1)
+            sys.exit()
+    except NameError:
+        print('Graphing Modules not installed')
         time.sleep(1)
         sys.exit()
