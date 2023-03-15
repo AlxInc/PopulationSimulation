@@ -7,7 +7,7 @@ food = 75
 agriculture = 4.4
 populationBurden = 1
 disasterChance = 10
-simulationLimit = 2000
+simulationLimit = 1000
 
 peopleDictionary = []
 peopleDictionaryAncestors = []
@@ -70,6 +70,8 @@ lastNames = ['Smith',
 'Robertson']
 femmSuffix = ['ine', 'ela', 'a', 'lyn']
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
+consonats = 'bcdfghjklmnpqrstvwxyz'
+vowel = ['a', 'e', 'i', 'o', 'u']
 inbreeding = 0
 totalLived = 0
 
@@ -212,6 +214,7 @@ class Person:
 
     def generate_name(self, name, partner):
         name = name
+        global vowel
         partner = str(partner)
         n = random.randint(0, 20)
         new_name = ''
@@ -307,13 +310,40 @@ class Person:
                 for x in range(0, n-1):
                     new_name = new_name.replace(l, '')
 
-        if len(new_name) < 5 and gender == 1:
+        last = ''
+        for r in new_name:
+            if r in consonats and r == last:
+                new_name = new_name.replace(r, '')
+            else:
+                last = r
+
+        vowels = 0
+        for l in vowel:
+            s = new_name.count(l)
+            if s > 0:
+                vowels += 1
+        if vowels == 0:
+            new_name = new_name[:len(new_name) // 2] + random.choice(vowel) + new_name[len(new_name) // 2:]
+
+        if len(new_name) < 3:
+            if vowels == 0:
+                if random.randint(0, 1) == 1:
+                    new_name = new_name[random.randint(0,1)] + random.choice(vowel)
+                else:
+                    new_name = random.choice(vowel) + new_name[random.randint(0,1)]
+
+
+
+        if len(new_name) < 4 and gender == 1:
             new_name = new_name + random.choice(femmSuffix)
 
         if gender == 0:
             for x in femmSuffix:
                 if x in new_name:
                     new_name = new_name.replace(x, '')
+
+        if len(new_name) < 2:
+            new_name = new_name + random.choice(vowel) + random.choice(consonats)
 
 
         new_name = new_name.lower().title()
@@ -433,7 +463,7 @@ def harvest(line_year, line_food):
     return ablePeople, foodToDegrade, consumption
 
 def killPeople(victim, event, person=object):
-    global died_this_year peopleDictionaryAncestors
+    global died_this_year, peopleDictionaryAncestors
 
     if event == 'disaster' or 'starve':
         if len(peopleDictionary) > victim:
